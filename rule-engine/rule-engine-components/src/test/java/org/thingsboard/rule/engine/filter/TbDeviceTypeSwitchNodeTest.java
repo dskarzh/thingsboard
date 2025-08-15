@@ -44,7 +44,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -57,8 +56,8 @@ class TbDeviceTypeSwitchNodeTest {
     private TbMsgCallback callback;
 
     @BeforeEach
-    void setUp() throws TbNodeException {
-        TenantId tenantId = new TenantId(UUID.randomUUID());
+    void setUp() {
+        var tenantId = TenantId.fromUUID(UUID.randomUUID());
         deviceId = new DeviceId(UUID.randomUUID());
         deviceIdDeleted = new DeviceId(UUID.randomUUID());
 
@@ -67,9 +66,8 @@ class TbDeviceTypeSwitchNodeTest {
         deviceProfile.setName("TestDeviceProfile");
 
         //node
-        EmptyNodeConfiguration config = new EmptyNodeConfiguration();
         node = new TbDeviceTypeSwitchNode();
-        node.init(ctx, new TbNodeConfiguration(JacksonUtil.valueToTree(config)));
+        node.init(ctx, new TbNodeConfiguration(JacksonUtil.valueToTree(new EmptyNodeConfiguration())));
 
         //init mock
         ctx = mock(TbContext.class);
@@ -91,16 +89,16 @@ class TbDeviceTypeSwitchNodeTest {
     @Test
     void givenMsg_whenOnMsg_then_Fail() {
         CustomerId customerId = new CustomerId(UUID.randomUUID());
-        assertThatThrownBy(() -> {
-            node.onMsg(ctx, getTbMsg(customerId));
-        }).isInstanceOf(TbNodeException.class).hasMessageContaining("Unsupported originator type");
+        assertThatThrownBy(() -> node.onMsg(ctx, getTbMsg(customerId)))
+                .isInstanceOf(TbNodeException.class)
+                .hasMessageContaining("Unsupported originator type");
     }
 
     @Test
     void givenMsg_whenOnMsg_EntityIdDeleted_then_Fail() {
-        assertThatThrownBy(() -> {
-            node.onMsg(ctx, getTbMsg(deviceIdDeleted));
-        }).isInstanceOf(TbNodeException.class).hasMessageContaining("Device profile for entity id");
+        assertThatThrownBy(() -> node.onMsg(ctx, getTbMsg(deviceIdDeleted)))
+                .isInstanceOf(TbNodeException.class)
+                .hasMessageContaining("Device profile for entity id");
     }
 
     @Test
@@ -109,7 +107,7 @@ class TbDeviceTypeSwitchNodeTest {
         node.onMsg(ctx, msg);
 
         ArgumentCaptor<TbMsg> newMsgCaptor = ArgumentCaptor.forClass(TbMsg.class);
-        verify(ctx, times(1)).tellNext(newMsgCaptor.capture(), eq("TestDeviceProfile"));
+        verify(ctx).tellNext(newMsgCaptor.capture(), eq("TestDeviceProfile"));
         verify(ctx, never()).tellFailure(any(), any());
 
         TbMsg newMsg = newMsgCaptor.getValue();

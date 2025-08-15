@@ -15,7 +15,6 @@
  */
 package org.thingsboard.rule.engine.filter;
 
-import lombok.extern.slf4j.Slf4j;
 import org.thingsboard.rule.engine.api.EmptyNodeConfiguration;
 import org.thingsboard.rule.engine.api.RuleNode;
 import org.thingsboard.rule.engine.api.TbContext;
@@ -26,7 +25,6 @@ import org.thingsboard.server.common.data.id.AssetId;
 import org.thingsboard.server.common.data.id.EntityId;
 import org.thingsboard.server.common.data.plugin.ComponentType;
 
-@Slf4j
 @RuleNode(
         type = ComponentType.FILTER,
         name = "asset profile switch",

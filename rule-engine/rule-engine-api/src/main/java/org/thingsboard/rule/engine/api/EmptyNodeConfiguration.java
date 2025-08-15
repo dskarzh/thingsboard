@@ -15,15 +15,16 @@
  */
 package org.thingsboard.rule.engine.api;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.Data;
 
 @Data
+@JsonSerialize // to serialize as empty JSON object
 public class EmptyNodeConfiguration implements NodeConfiguration<EmptyNodeConfiguration> {
-
-    private int version;
 
     @Override
     public EmptyNodeConfiguration defaultConfiguration() {
         return new EmptyNodeConfiguration();
     }
+
 }

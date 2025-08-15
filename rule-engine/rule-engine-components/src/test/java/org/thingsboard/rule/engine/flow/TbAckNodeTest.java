@@ -24,7 +24,6 @@ import org.thingsboard.common.util.JacksonUtil;
 import org.thingsboard.rule.engine.api.EmptyNodeConfiguration;
 import org.thingsboard.rule.engine.api.TbContext;
 import org.thingsboard.rule.engine.api.TbNodeConfiguration;
-import org.thingsboard.rule.engine.api.TbNodeException;
 import org.thingsboard.server.common.data.id.DeviceId;
 import org.thingsboard.server.common.data.msg.TbMsgType;
 import org.thingsboard.server.common.msg.TbMsg;
@@ -32,7 +31,6 @@ import org.thingsboard.server.common.msg.TbMsgMetaData;
 
 import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.mockito.BDDMockito.then;
 
@@ -40,7 +38,6 @@ import static org.mockito.BDDMockito.then;
 public class TbAckNodeTest {
 
     private TbAckNode node;
-    private EmptyNodeConfiguration config;
     private TbNodeConfiguration nodeConfiguration;
 
     @Mock
@@ -49,13 +46,7 @@ public class TbAckNodeTest {
     @BeforeEach
     public void setUp() {
         node = new TbAckNode();
-        config = new EmptyNodeConfiguration().defaultConfiguration();
-        nodeConfiguration = new TbNodeConfiguration(JacksonUtil.valueToTree(config));
-    }
-
-    @Test
-    public void verifyDefaultConfig() {
-        assertThat(config.getVersion()).isEqualTo(0);
+        nodeConfiguration = new TbNodeConfiguration(JacksonUtil.valueToTree(new EmptyNodeConfiguration()));
     }
 
     @Test
@@ -64,7 +55,7 @@ public class TbAckNodeTest {
     }
 
     @Test
-    public void givenMsg_whenOnMsg_thenAckAndTellSuccess() throws TbNodeException {
+    public void givenMsg_whenOnMsg_thenAckAndTellSuccess() {
         node.init(ctxMock, nodeConfiguration);
         DeviceId deviceId = new DeviceId(UUID.fromString("5770153d-6ca2-4447-8a54-5d8a4538e052"));
         TbMsg msg = TbMsg.newMsg()

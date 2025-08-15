@@ -31,7 +31,6 @@ import org.thingsboard.rule.engine.api.EmptyNodeConfiguration;
 import org.thingsboard.rule.engine.api.RuleEngineTelemetryService;
 import org.thingsboard.rule.engine.api.TbContext;
 import org.thingsboard.rule.engine.api.TbNodeConfiguration;
-import org.thingsboard.rule.engine.api.TbNodeException;
 import org.thingsboard.server.common.data.AttributeScope;
 import org.thingsboard.server.common.data.DataConstants;
 import org.thingsboard.server.common.data.EntityView;
@@ -95,11 +94,9 @@ public class TbCopyAttributesToEntityViewNodeTest {
     private RuleEngineTelemetryService telemetryServiceMock;
 
     @BeforeEach
-    void setUp() throws TbNodeException {
+    void setUp() {
         node = new TbCopyAttributesToEntityViewNode();
-        var config = new EmptyNodeConfiguration().defaultConfiguration();
-        var configuration = new TbNodeConfiguration(JacksonUtil.valueToTree(config));
-        node.init(ctxMock, configuration);
+        node.init(ctxMock, new TbNodeConfiguration(JacksonUtil.valueToTree(new EmptyNodeConfiguration())));
     }
 
     @Test
@@ -299,4 +296,5 @@ public class TbCopyAttributesToEntityViewNodeTest {
         when(entityViewServiceMock.findEntityViewsByTenantIdAndEntityIdAsync(any(), any()))
                 .thenReturn(Futures.immediateFuture(List.of(entityView)));
     }
+
 }

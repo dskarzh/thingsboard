@@ -44,3 +44,24 @@ DROP INDEX IF EXISTS idx_widgets_bundle_external_id;
 -- DROP INDEXES THAT DUPLICATE UNIQUE CONSTRAINT END
 
 ALTER TABLE mobile_app ADD COLUMN IF NOT EXISTS title varchar(255);
+
+-- REMOVE UNUSED 'version' PROPERTY FROM EmptyNodeConfiguration START
+
+UPDATE rule_node
+SET configuration = '{}'
+WHERE type IN (
+        'org.thingsboard.rule.engine.action.TbCopyAttributesToEntityViewNode',
+        'org.thingsboard.rule.engine.filter.TbAssetTypeSwitchNode',
+        'org.thingsboard.rule.engine.filter.TbDeviceTypeSwitchNode',
+        'org.thingsboard.rule.engine.filter.TbMsgTypeSwitchNode',
+        'org.thingsboard.rule.engine.filter.TbOriginatorTypeSwitchNode',
+        'org.thingsboard.rule.engine.flow.TbAckNode',
+        'org.thingsboard.rule.engine.flow.TbCheckpointNode',
+        'org.thingsboard.rule.engine.flow.TbRuleChainOutputNode',
+        'org.thingsboard.rule.engine.telemetry.TbCalculatedFieldsNode',
+        'org.thingsboard.rule.engine.transaction.TbSynchronizationBeginNode',
+        'org.thingsboard.rule.engine.transaction.TbSynchronizationEndNode'
+        'org.thingsboard.rule.engine.transform.TbSplitArrayMsgNode'
+    );
+
+-- REMOVE UNUSED 'version' PROPERTY FROM EmptyNodeConfiguration END

@@ -24,7 +24,6 @@ import org.thingsboard.common.util.JacksonUtil;
 import org.thingsboard.rule.engine.api.EmptyNodeConfiguration;
 import org.thingsboard.rule.engine.api.TbContext;
 import org.thingsboard.rule.engine.api.TbNodeConfiguration;
-import org.thingsboard.rule.engine.api.TbNodeException;
 import org.thingsboard.server.common.data.id.DeviceId;
 import org.thingsboard.server.common.data.id.EntityId;
 import org.thingsboard.server.common.data.msg.TbMsgType;
@@ -46,20 +45,19 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 public class TbSplitArrayMsgNodeTest {
+
     DeviceId deviceId;
     TbSplitArrayMsgNode node;
-    EmptyNodeConfiguration config;
     TbNodeConfiguration nodeConfiguration;
     TbContext ctx;
     TbMsgCallback callback;
 
     @BeforeEach
-    void setUp() throws TbNodeException {
+    void setUp() {
         deviceId = new DeviceId(UUID.randomUUID());
         callback = mock(TbMsgCallback.class);
         ctx = mock(TbContext.class);
-        config = new EmptyNodeConfiguration();
-        nodeConfiguration = new TbNodeConfiguration(JacksonUtil.valueToTree(config));
+        nodeConfiguration = new TbNodeConfiguration(JacksonUtil.valueToTree(new EmptyNodeConfiguration()));
         node = spy(new TbSplitArrayMsgNode());
         node.init(ctx, nodeConfiguration);
     }
@@ -70,24 +68,24 @@ public class TbSplitArrayMsgNodeTest {
     }
 
     @Test
-    void givenFewMsg_whenOnMsg_thenVerifyOutput() throws Exception {
+    void givenFewMsg_whenOnMsg_thenVerifyOutput() {
         String data = "[{\"Attribute_1\":22.5,\"Attribute_2\":10.3}, {\"Attribute_1\":1,\"Attribute_2\":2}]";
-        VerifyOutputMsg(data);
+        verifyOutputMsg(data);
     }
 
     @Test
-    void givenOneMsg_whenOnMsg_thenVerifyOutput() throws Exception {
+    void givenOneMsg_whenOnMsg_thenVerifyOutput() {
         String data = "[{\"Attribute_1\":22.5,\"Attribute_2\":10.3}]";
-        VerifyOutputMsg(data);
+        verifyOutputMsg(data);
     }
 
     @Test
-    void givenZeroMsg_whenOnMsg_thenVerifyOutput() throws Exception {
-        VerifyOutputMsg(TbMsg.EMPTY_JSON_ARRAY);
+    void givenZeroMsg_whenOnMsg_thenVerifyOutput() {
+        verifyOutputMsg(TbMsg.EMPTY_JSON_ARRAY);
     }
 
     @Test
-    void givenNoArrayMsg_whenOnMsg_thenFailure() throws Exception {
+    void givenNoArrayMsg_whenOnMsg_thenFailure() {
         String data = "{\"Attribute_1\":22.5,\"Attribute_2\":10.3}";
         JsonNode dataNode = JacksonUtil.toJsonNode(data);
         TbMsg msg = getTbMsg(deviceId, dataNode.toString());
@@ -97,7 +95,7 @@ public class TbSplitArrayMsgNodeTest {
         ArgumentCaptor<Exception> exceptionCaptor = ArgumentCaptor.forClass(Exception.class);
         verify(ctx, never()).tellSuccess(any());
         verify(ctx, never()).enqueueForTellNext(any(), anyString(), any(), any());
-        verify(ctx, times(1)).tellFailure(newMsgCaptor.capture(), exceptionCaptor.capture());
+        verify(ctx).tellFailure(newMsgCaptor.capture(), exceptionCaptor.capture());
 
         assertThat(exceptionCaptor.getValue()).isInstanceOf(RuntimeException.class);
 
@@ -107,7 +105,7 @@ public class TbSplitArrayMsgNodeTest {
         assertThat(newMsg).isSameAs(msg);
     }
 
-    private void VerifyOutputMsg(String data) throws Exception {
+    private void verifyOutputMsg(String data) {
         JsonNode dataNode = JacksonUtil.toJsonNode(data);
         TbMsg tbMsg = getTbMsg(deviceId, dataNode.toString());
         node.onMsg(ctx, tbMsg);
@@ -119,7 +117,7 @@ public class TbSplitArrayMsgNodeTest {
             for (Runnable valueCaptor : successCaptor.getAllValues()) {
                 valueCaptor.run();
             }
-            verify(ctx, times(1)).ack(tbMsg);
+            verify(ctx).ack(tbMsg);
         } else {
             ArgumentCaptor<TbMsg> newMsgCaptor = ArgumentCaptor.forClass(TbMsg.class);
             verify(ctx, times(dataNode.size())).tellSuccess(newMsgCaptor.capture());
@@ -140,4 +138,5 @@ public class TbSplitArrayMsgNodeTest {
                 .callback(callback)
                 .build();
     }
+
 }

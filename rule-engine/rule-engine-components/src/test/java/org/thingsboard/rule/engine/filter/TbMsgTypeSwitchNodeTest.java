@@ -57,7 +57,7 @@ class TbMsgTypeSwitchNodeTest {
     }
 
     @Test
-    void givenAllTypes_whenOnMsg_then_allTypesSupported() throws TbNodeException {
+    void givenAllTypes_whenOnMsg_then_allTypesSupported() {
         // GIVEN
         List<TbMsg> tbMsgList = new ArrayList<>();
         var tbMsgTypes = TbMsgType.values();
