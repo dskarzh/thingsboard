@@ -943,4 +943,70 @@ public class TenantControllerTest extends AbstractControllerTest {
         Mockito.reset(tbClusterService);
     }
 
+    @Test
+    public void testGetTenantEntityStats() throws Exception {
+        loginSysAdmin();
+
+        // Create test tenants
+        Tenant tenant1 = new Tenant();
+        tenant1.setTitle("Tenant 1");
+        Tenant savedTenant1 = saveTenant(tenant1);
+
+        Tenant tenant2 = new Tenant();
+        tenant2.setTitle("Tenant 2");
+        Tenant savedTenant2 = saveTenant(tenant2);
+
+        try {
+            // Create tenant admin for tenant2
+            User tenant2Admin = new User();
+            tenant2Admin.setAuthority(Authority.TENANT_ADMIN);
+            tenant2Admin.setTenantId(savedTenant2.getId());
+            tenant2Admin.setEmail("tenant2admin@thingsboard.org");
+            createUserAndLogin(tenant2Admin, "tenant2password");
+
+            // Create entities for tenant2
+            Device device3 = createDevice("Device 3", "default");
+
+            // Switch to tenant1 (default tenant) and create entities
+            loginTenantAdmin();
+            Device device1 = createDevice("Device 1", "default");
+            Device device2 = createDevice("Device 2", "default");
+
+            // Get stats as SysAdmin
+            loginSysAdmin();
+            String url = "/api/tenant/stats/entities";
+            org.thingsboard.server.common.data.TenantEntityStats[] stats = doGet(url, org.thingsboard.server.common.data.TenantEntityStats[].class);
+
+            Assert.assertNotNull(stats);
+            Assert.assertTrue(stats.length >= 2);
+
+            // Find stats for our test tenants
+            org.thingsboard.server.common.data.TenantEntityStats tenant1Stats = null;
+            org.thingsboard.server.common.data.TenantEntityStats tenant2Stats = null;
+
+            for (org.thingsboard.server.common.data.TenantEntityStats stat : stats) {
+                if (stat.getTenantId().equals(tenantId)) {
+                    tenant1Stats = stat;
+                } else if (stat.getTenantId().equals(savedTenant2.getId())) {
+                    tenant2Stats = stat;
+                }
+            }
+
+            Assert.assertNotNull("Stats for default tenant not found", tenant1Stats);
+            Assert.assertNotNull("Stats for tenant2 not found", tenant2Stats);
+
+            // Verify device counts (at least the ones we created)
+            Assert.assertTrue(tenant1Stats.getEntityCounts().containsKey("DEVICE"));
+            Assert.assertTrue(tenant2Stats.getEntityCounts().containsKey("DEVICE"));
+
+            Assert.assertTrue(tenant1Stats.getEntityCounts().get("DEVICE") >= 2);
+            Assert.assertTrue(tenant2Stats.getEntityCounts().get("DEVICE") >= 1);
+
+        } finally {
+            // Cleanup
+            loginSysAdmin();
+            deleteTenant(savedTenant2.getId());
+        }
+    }
+
 }

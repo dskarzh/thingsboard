@@ -32,13 +32,16 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.thingsboard.server.common.data.EntityType;
 import org.thingsboard.server.common.data.Tenant;
+import org.thingsboard.server.common.data.TenantEntityStats;
 import org.thingsboard.server.common.data.TenantInfo;
 import org.thingsboard.server.common.data.exception.ThingsboardException;
 import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.common.data.page.PageData;
 import org.thingsboard.server.common.data.page.PageLink;
 import org.thingsboard.server.config.annotations.ApiOperation;
+import org.thingsboard.server.dao.entity.EntityCountService;
 import org.thingsboard.server.dao.tenant.TenantService;
 import org.thingsboard.server.queue.util.TbCoreComponent;
 import org.thingsboard.server.service.entitiy.tenant.TbTenantService;
@@ -46,7 +49,9 @@ import org.thingsboard.server.service.security.permission.Operation;
 import org.thingsboard.server.service.security.permission.Resource;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -74,6 +79,7 @@ public class TenantController extends BaseController {
 
     private final TenantService tenantService;
     private final TbTenantService tbTenantService;
+    private final EntityCountService entityCountService;
 
     @ApiOperation(value = "Get Tenant (getTenantById)",
             notes = "Fetch the Tenant object based on the provided Tenant Id. " + SYSTEM_OR_TENANT_AUTHORITY_PARAGRAPH)
@@ -191,6 +197,63 @@ public class TenantController extends BaseController {
                 return false;
             }
         }).toList();
+    }
+
+    @ApiOperation(value = "Get Tenant Entity Stats (getTenantEntityStats)",
+            notes = "Returns entity statistics for all tenants, showing the count of each entity type per tenant. " +
+                    "Only accessible by system administrators. " + SYSTEM_AUTHORITY_PARAGRAPH)
+    @PreAuthorize("hasAuthority('SYS_ADMIN')")
+    @GetMapping(value = "/tenant/stats/entities")
+    public List<TenantEntityStats> getTenantEntityStats() throws ThingsboardException {
+        List<TenantEntityStats> result = new ArrayList<>();
+
+        // Entity types to count for each tenant
+        List<EntityType> entityTypesToCount = List.of(
+            EntityType.DEVICE,
+            EntityType.ASSET,
+            EntityType.CUSTOMER,
+            EntityType.USER,
+            EntityType.DASHBOARD,
+            EntityType.ENTITY_VIEW,
+            EntityType.RULE_CHAIN,
+            EntityType.ALARM,
+            EntityType.EDGE,
+            EntityType.DEVICE_PROFILE,
+            EntityType.ASSET_PROFILE
+        );
+
+        // Iterate through all tenants using pagination
+        int page = 0;
+        int pageSize = 100;
+        PageData<Tenant> tenantPage;
+
+        do {
+            PageLink pageLink = new PageLink(pageSize, page);
+            tenantPage = tenantService.findTenants(pageLink);
+
+            for (Tenant tenant : tenantPage.getData()) {
+                TenantId tenantId = tenant.getId();
+                Map<String, Long> entityCounts = new LinkedHashMap<>();
+
+                // Count entities for each type
+                for (EntityType entityType : entityTypesToCount) {
+                    try {
+                        long count = entityCountService.countByTenantIdAndEntityType(tenantId, entityType);
+                        entityCounts.put(entityType.name(), count);
+                    } catch (Exception e) {
+                        log.warn("Failed to count {} for tenant {}: {}", entityType, tenantId, e.getMessage());
+                        entityCounts.put(entityType.name(), 0L);
+                    }
+                }
+
+                TenantEntityStats stats = new TenantEntityStats(tenantId, tenant.getName(), entityCounts);
+                result.add(stats);
+            }
+
+            page++;
+        } while (tenantPage.hasNext());
+
+        return result;
     }
 
 }
